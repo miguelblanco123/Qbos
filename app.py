@@ -9,10 +9,10 @@ def main():
             menu_title="Speedcubing Tools",
             
             options=["Schedule Generator", 
-                    ],
+                ],
             
             icons=["house", 
-                "file-earmark"],
+            "file-earmark"],
             
             menu_icon="cast",
             
@@ -21,10 +21,10 @@ def main():
             orientation="vertical",
             
             styles={
-                "container": {"padding": "0!important", "background-color": "#ffffff"},
-                "icon": {"color": "black", "font-size": "25px"},
-                "nav-link": {"font-size": "16px", "text-align": "left", "margin": "0px", "--hover-color": "#eee"},
-                "nav-link-selected": {"background-color": "#000000"},
+            "container": {"padding": "0!important", "background-color": "#333333"},
+            "icon": {"color": "#ffffff", "font-size": "25px"},
+            "nav-link": {"font-size": "16px", "text-align": "left", "margin": "0px", "--hover-color": "#444444"},
+            "nav-link-selected": {"background-color": "#555555"},
             }
         )
 

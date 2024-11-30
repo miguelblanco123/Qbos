@@ -3,13 +3,21 @@ import streamlit as st
 import math
 from datetime import datetime, timedelta
 
-# Initialize session state variables if they don't exist
-if 'selected_categories' not in st.session_state:
-    st.session_state.selected_categories = []
-if 'number_of_competitors' not in st.session_state:
-    st.session_state.number_of_competitors = 1
-if 'rounds_cutoffs' not in st.session_state:
-    st.session_state.rounds_cutoffs = {}
+# Initialize all session state variables at the start
+def initialize_session_state():
+    if 'selected_categories' not in st.session_state:
+        st.session_state.selected_categories = []
+    if 'number_of_competitors' not in st.session_state:
+        st.session_state.number_of_competitors = 1
+    if 'rounds_cutoffs' not in st.session_state:
+        st.session_state.rounds_cutoffs = {}
+    if 'main_event' not in st.session_state:
+        st.session_state.main_event = '3x3'
+    if 'num_days' not in st.session_state:
+        st.session_state.num_days = 2
+    if 'day_schedules' not in st.session_state:
+        st.session_state.day_schedules = [('09:00', '18:00')] * 2
+        
 
 categories = ['3x3', '2x2', '4x4', '5x5', '6x6', '7x7', '3BLD', '3OH', 'FMC', 
               'Megaminx', 'Pyraminx', 'Skewb', 'Square-1', 'Clock', '4BLD', 
@@ -509,6 +517,9 @@ def display_schedule(schedule_df):
         
         
 def scheduleGenerator():
+    # Initialize session state first
+    initialize_session_state()
+    
     st.title('Schedule Generator')
     st.write('Welcome to the Schedule Generator app')
     
@@ -517,7 +528,17 @@ def scheduleGenerator():
         reset_settings()
         st.experimental_rerun()
     
-    # Use the session state values for the inputs
+    # Add number of days selection at the top of the sidebar
+    num_days = st.sidebar.number_input(
+        'Number of Competition Days', 
+        min_value=1, 
+        max_value=3, 
+        value=st.session_state.num_days,
+        key='days_input'
+    )
+    st.session_state.num_days = num_days
+    
+    # Category selection
     selected_categories = st.sidebar.multiselect(
         'Select Categories',
         categories,
@@ -526,6 +547,17 @@ def scheduleGenerator():
         on_change=update_selected_categories
     )
     
+    # Main event selection (only show if categories are selected)
+    if selected_categories:
+        main_event = st.sidebar.selectbox(
+            'Main Event',
+            selected_categories,
+            index=selected_categories.index('3x3') if '3x3' in selected_categories else 0,
+            key='main_event_select'
+        )
+        st.session_state.main_event = main_event
+    
+    # Number of competitors input
     number_of_competitors = st.sidebar.number_input(
         'Number of Competitors',
         min_value=1,
@@ -533,6 +565,20 @@ def scheduleGenerator():
         key='competitor_count',
         on_change=update_competitor_count
     )
+    
+    # Add day schedule inputs
+    day_schedules = []
+    for day in range(num_days):
+        st.sidebar.subheader(f'Day {day + 1} Schedule')
+        col1, col2 = st.sidebar.columns(2)
+        with col1:
+            default_start = datetime.strptime(st.session_state.day_schedules[day][0], '%H:%M').time()
+            start_time = st.time_input(f'Day {day + 1} Start Time', value=default_start)
+        with col2:
+            default_end = datetime.strptime(st.session_state.day_schedules[day][1], '%H:%M').time()
+            end_time = st.time_input(f'Day {day + 1} End Time', value=default_end)
+        day_schedules.append((start_time.strftime('%H:%M'), end_time.strftime('%H:%M')))
+    st.session_state.day_schedules = day_schedules
 
     # Calculate stations
     num_stations = calculate_stations(number_of_competitors)
@@ -629,8 +675,9 @@ def scheduleGenerator():
                     if round_num < rounds - 2:  # Show estimated competitors for next round if it's not the final
                         st.info(f"Approximately {current_competitors} competitors will advance")
     
-    # Display estimated competitors table if categories are selected
+    # Display results if categories are selected
     if selected_categories:
+        # Display estimated competitors table
         st.subheader('Estimated Competitors per Category')
         estimates_df = calculate_estimated_competitors(
             number_of_competitors,
@@ -639,35 +686,8 @@ def scheduleGenerator():
         )
         st.dataframe(estimates_df)
         
-        # Add day selection
-    num_days = st.sidebar.number_input('Number of Competition Days', min_value=1, max_value=3, value=2)
-    
-    # Add main event selection
-    main_event = st.sidebar.selectbox(
-        'Main Event',
-        selected_categories,
-        index=selected_categories.index('3x3') if '3x3' in selected_categories else 0
-    )
-    
-    # Add day schedule inputs
-    day_schedules = []
-    for day in range(num_days):
-        st.sidebar.subheader(f'Day {day + 1} Schedule')
-        col1, col2 = st.sidebar.columns(2)
-        with col1:
-            start_time = st.time_input(f'Day {day + 1} Start Time', value=datetime.strptime('08:00', '%H:%M').time())
-        with col2:
-            end_time = st.time_input(f'Day {day + 1} End Time', value=datetime.strptime('18:00', '%H:%M').time())
-        day_schedules.append((start_time.strftime('%H:%M'), end_time.strftime('%H:%M')))
-    
-    if selected_categories:
+        # Generate and display schedule
         st.subheader('Competition Schedule')
-        estimates_df = calculate_estimated_competitors(
-            number_of_competitors,
-            selected_categories,
-            st.session_state.rounds_cutoffs
-        )
-        
         schedule_df, warnings = schedule_competition(
             estimates_df, 
             num_days, 
@@ -685,9 +705,6 @@ def scheduleGenerator():
         # Display the schedule in the enhanced format
         display_schedule(schedule_df)
         
-        # Optionally, you can still show the raw dataframe in an expander
+        # Show raw schedule data in an expander
         with st.expander("View Raw Schedule Data"):
             st.dataframe(schedule_df)
-
-if __name__ == '__main__':
-    scheduleGenerator()
