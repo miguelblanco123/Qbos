@@ -16,7 +16,7 @@ def initialize_session_state():
     if 'num_days' not in st.session_state:
         st.session_state.num_days = 2
     if 'day_schedules' not in st.session_state:
-        st.session_state.day_schedules = [('09:00', '18:00')] * 2
+        st.session_state.day_schedules = [('08:00', '18:00')] * 2
         
 
 categories = ['3x3', '2x2', '4x4', '5x5', '6x6', '7x7', '3BLD', '3OH', 'FMC', 
