@@ -1,2 +1,2 @@
-# Qbos
-Proyectillos de Spidqbing
+# Speeeccubing
+Proyectillos de Speedcubing
